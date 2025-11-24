@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<h2>Your Notifications</h2>
+
+<button id="mark-all-btn">Mark all as read</button>
+
+<ul id="notification-list">
+  {% for n in notifications %}
+    <li data-id="{{ n.id }}" class="notif-item {% if not n.seen %}unseen{% endif %}">
+      <div class="message">{{ n.message|linebreaksbr }}</div>
+      <small class="muted">{{ n.created_at }}</small>
+      {% if not n.seen %}
+        <button class="mark-btn">Mark as read</button>
+      {% endif %}
+    </li>
+  {% empty %}
+    <li>No notifications</li>
+  {% endfor %}
+</ul>
+
+<script>
+  // CSRF helper
+  function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';');
+          for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.startsWith(name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+  }
+  const csrftoken = getCookie('csrftoken');
+
+  // mark single notification
+  document.querySelectorAll('.mark-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const li = e.target.closest('li');
+      const id = li.dataset.id;
+      const resp = await fetch("{% url 'notifications_mark_seen' %}", {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrftoken, 'Content-Type': 'application/x-www-form-urlencoded'},
+        body: "ids=" + encodeURIComponent(id)
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        li.classList.remove('unseen');
+        e.target.remove(); // remove the button
+        updateNavCount();
+      } else {
+        alert('Error marking notification');
+      }
+    });
+  });
+
+  // mark all
+  document.getElementById('mark-all-btn').addEventListener('click', async () => {
+    const resp = await fetch("{% url 'notifications_mark_seen' %}", {
+      method: 'POST',
+      headers: {'X-CSRFToken': csrftoken}
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      document.querySelectorAll('.notif-item.unseen').forEach(el => {
+        el.classList.remove('unseen');
+        const btn = el.querySelector('.mark-btn');
+        if (btn) btn.remove();
+      });
+      updateNavCount();
+    } else {
+      alert('Error marking notifications');
+    }
+  });
+
+  // helper to update navbar unread count (calls unread_count view)
+  async function updateNavCount() {
+    const resp = await fetch("{% url 'notifications_unread_count' %}");
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const el = document.getElementById('nav-notif-count');
+    if (el) el.textContent = data.unread > 0 ? data.unread : '';
+  }
+</script>
+{% endblock %}

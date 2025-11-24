@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background: #e60000;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: #b30000;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <div class="logo">🌐 MySite</div>
+
+    <!-- 🔹 DIRECT LOGOUT BUTTON (no dropdown) -->
+    <form method="POST" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button class="logout-btn" type="submit">Logout</button>
+    </form>
+</div>
+
+<h3>Welcome, {{ request.user.username }} 👋</h3>
+
+</body>
+</html>
